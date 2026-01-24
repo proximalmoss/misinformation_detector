@@ -5,7 +5,7 @@ import numpy as np
 import pandas as pd
 import dill
 from sklearn.metrics import accuracy_score
-from sklearn.model_selection import GridSearchCV
+from sklearn.model_selection import RandomizedSearchCV
 
 from src.exception import CustomException
 
@@ -28,10 +28,10 @@ def evaluate_models(x_train, y_train, x_test, y_test, models, params):
             model_name=list(models.keys())[i]
             para=params[model_name]
 
-            gs=GridSearchCV(model, para, cv=3)
-            gs.fit(x_train, y_train)
+            rs=RandomizedSearchCV(model, para, cv=3, n_jobs=-1, verbose=1, n_iter=15, random_state=42, scoring='accuracy')
+            rs.fit(x_train, y_train)
 
-            best_model=gs.best_estimator_
+            best_model=rs.best_estimator_
 
             models[model_name]=best_model
 

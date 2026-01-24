@@ -3,10 +3,9 @@ import sys
 from dataclasses import dataclass
 
 from catboost import CatBoostClassifier
-from sklearn.ensemble import (AdaBoostClassifier, GradientBoostingClassifier, RandomForestClassifier)
+from sklearn.ensemble import (AdaBoostClassifier, RandomForestClassifier)
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score
-from sklearn.neighbors import KNeighborsClassifier
 from sklearn.tree import DecisionTreeClassifier
 from xgboost import XGBClassifier
 
@@ -29,20 +28,16 @@ class ModelTrainer:
                 "Logistic Regression":LogisticRegression(max_iter=1000),
                 "Decision Tree":DecisionTreeClassifier(),
                 "Random Forest":RandomForestClassifier(),
-                "Gradient Boosting":GradientBoostingClassifier(),
-                "K-Neighbors Classifier":KNeighborsClassifier(),
                 "XGBClassifier":XGBClassifier(eval_metric='logloss'),
                 "CatBoost Classifier":CatBoostClassifier(verbose=False),
                 "AdaBoost Classifier":AdaBoostClassifier()
             }
             params={
-                "Logistic Regression":{'C':[0.1,1.0,10.0], 'penalty':['l2']},
+                "Logistic Regression":{'C':[0.1,1.0,10.0]},
                 "Decision Tree":{'max_depth':[10,20,None], 'min_samples_split':[2,5,10]},
                 "Random Forest":{'n_estimators':[50,100,200], 'max_depth':[15,20,None]},
-                "Gradient Boosting":{'learning_rate':[0.05,0.1,0.2], 'n_estimators':[50,100,200], 'max_depth':[5,7,10]},
-                "K-Neighbors Classifier":{'n_neighbors':[3,5,7,9]},
                 "XGBClassifier":{'learning_rate':[0.05,0.1,0.2], 'n_estimators':[50,100,200], 'max_depth':[5,7,10]},
-                "CatBoost Classifier":{'depth':[6,8,10], 'learning_rate':[0.05,0.1,0.2], 'iterations':[50,100,200]},
+                "CatBoost Classifier":{'depth':[8], 'learning_rate':[0.1], 'iterations':[100]},
                 "AdaBoost Classifier":{'learning_rate':[0.1,0.5,1.0], 'n_estimators':[50,100,200]}
             }
             model_report: dict=evaluate_models(

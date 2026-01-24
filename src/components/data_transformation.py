@@ -7,7 +7,7 @@ import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.impute import SimpleImputer
 from sklearn.pipeline import Pipeline
-from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.preprocessing import StandardScaler
 from sklearn.feature_extraction.text import TfidfVectorizer
 from scipy.sparse import hstack
 import string
@@ -78,10 +78,6 @@ class DataTransformation:
             train_df=self.engineer_features(train_df)
             test_df=self.engineer_features(test_df)
 
-            self.le=LabelEncoder()
-            train_df['subject_encoded']=self.le.fit_transform(train_df['subject'])
-            test_df['subject_encoded']=self.le.transform(test_df['subject'])
-
             logging.info("Obtaining preprocessing object")
 
             tfidf_pipeline, num_pipeline, numerical_columns=self.get_data_transformer_object()
@@ -89,11 +85,11 @@ class DataTransformation:
             target_column_name='label'
 
             input_text_train=train_df['text']
-            input_numerical_train=train_df[numerical_columns+['subject_encoded']]
+            input_numerical_train=train_df[numerical_columns]
             target_feature_train=train_df[target_column_name]
 
             input_text_test=test_df['text']
-            input_numerical_test=test_df[numerical_columns+['subject_encoded']]
+            input_numerical_test=test_df[numerical_columns]
             target_feature_test=test_df[target_column_name]
 
             logging.info('Applying preprocessing object on train and test dataset')
@@ -117,7 +113,6 @@ class DataTransformation:
             preprocessor={
                 'tfidf_pipeline':tfidf_pipeline,
                 'num_pipeline':num_pipeline,
-                'label_encoder':self.le,
                 'numerical_columns':numerical_columns
             }
 
