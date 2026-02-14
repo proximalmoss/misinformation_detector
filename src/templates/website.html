@@ -1,0 +1,609 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewpoint" content="width=device-width, initial-scale=1.0">
+    <title>Misinformation Detector</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700;900&family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: linear-gradient(135deg, #e0f2fe 0%, #bae6fd 50%, #7dd3fc 100%);
+            background-attachment: fixed;
+            min-height: 100vh;
+            padding: 20px;
+            position: relative;
+        }
+
+        body::before{
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: 
+                radial-gradient(circle at 20% 50%, rgba(59, 130, 246, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 80% 80%, rgba(30, 64, 175, 0.1) 0%, transparent 50%),
+                radial-gradient(circle at 40% 20%, rgba(96, 165, 250, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header {
+            text-align: center;
+            padding: 60px 30px;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 50%, #60a5fa 100%);
+            border-radius: 24px;
+            color: white;
+            margin-bottom: 40px;
+            border: 5px solid #1e3a8a;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .header::before {
+            content: '';
+            position: absolute;
+            top: -50%;
+            right: -50%;
+            width: 200%;
+            height: 200%;
+            background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, transparent 70%);
+            animation: pulse 4s ease-in-out infinite;
+
+        }
+
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+
+        .header h1 {
+            font-family: 'Poppins', sans-serif;
+            font-size: 3.5rem;
+            margin-bottom: 15px;
+            font-weight: 900;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 20px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .header p {
+            font-family: 'Space Grotesk', monospace;
+            font-size: 1.3rem;
+            font-weight: 500;
+            letter-spacing: 2px;
+            position: relative;
+            z-index: 1;
+        }
+
+        .form-card {
+            background: linear-gradient(135deg, #ffffff 0%, #f0f9ff 100%);
+            border: 5px solid #3b82f6;
+            border-radius: 20px;
+            padding: 45px;
+            margin-bottom: 40px;
+        }
+
+        .form-group {
+            margin-bottom: 30px;
+        }
+
+        .form-group label {
+            display: block;
+            color: #1e3a8a;
+            font-family: 'Space Grotesk', monospace;
+            font-weight: 700;
+            margin-bottom: 12px;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .form-group input,
+        .form-group textarea {
+            width: 100%;
+            padding: 18px;
+            border: 4px solid #93c5fd;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s ease;
+            background: white;
+        }
+
+        .form-group input:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #2563eb;
+            background: #eff6ff;
+        }
+
+        .form-group textarea {
+            resize: vertical;
+            min-height: 250px;
+            line-height: 1.7;
+        }
+
+        .analyze-btn {
+            width: 100%;
+            padding: 22px;
+            background: linear-gradient(135deg, #1e40af 0%, #3b82f6 100%);
+            color: white;
+            border: 5px solid #1e3a8a;
+            border-radius: 15px;
+            font-family: 'Poppins', sans-serif;
+            font-size: 1.4rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .analyze-btn:hover {
+            background: linear-gradient(135deg, #1e3a8a 0%, #1e40af 100%);
+            transform: translateY(-3px);
+        }
+
+        .analyze-btn:active {
+            transform: translateY(0);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 50px;
+            background: linear-gradient(135deg, #ffffff 0%, #dbeafe 100%);
+            border: 5px solid #3b82f6;
+            border-radius: 20px;
+            margin-bottom: 40px;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 8px solid #bfdbfe;
+            border-top: 8px solid #1e40af;
+            border-radius: 50%;
+            width: 70px;
+            height: 70px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading p {
+            color: #1e40af;
+            font-size: 1.2rem;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+
+        .results {
+            display: none;
+        }
+
+        .results.show {
+            display: grid;
+            gap: 30px;
+            animation: fadeIn 0.5s ease 
+        }
+
+        .result-card {
+            background: white;
+            border: 5px solid #3b82f6;
+            padding: 50px;
+            text-align: center;
+        }
+
+        .result-icon {
+            font-size: 5rem;
+            margin-bottom: 20px;
+        }
+
+        .result-status {
+            font-size: 2.5rem;
+            font-weight: 900;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .result-status.real {
+            color: #059669;
+        }
+
+        .result-status.fake {
+            color: #dc2626;
+        }
+
+        .confidence-label {
+            color: #1e3a8a;
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .confidence-bar {
+            height: 40px;
+            background: #e0f2fe;
+            border: 3px solid #60a5fa;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .confidence-fill {
+            height: 100%;
+            background: #1e40af;
+            transition: width 1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            padding-right: 15px;
+        }
+
+        .confidence-text {
+            color: white;
+            font-weight: 900;
+            font-size: 1.3rem;
+        }
+
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+        }
+
+        .stat-box {
+            background: white;
+            border: 4px solid #60a5fa;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #1e40af;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            color: #475569;
+            font-size: 1rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .indicators-section {
+            background: white;
+            border: 4px solid #3b82f6;
+            padding: 40px;
+        }
+
+        .indicators-section h3 {
+            color: #1e3a8a;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            font-weight: 900;
+            text-transform: uppercase;
+            border-bottom: 4px solid #60a5fa;
+            padding-bottom: 15px;
+        }
+
+        .indicator-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+        }
+
+        .indicator-item {
+            background: #f0f9ff;
+            border-left: 6px solid #3b82f6;
+            padding: 20px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+        }
+
+        .indicator-icon {
+            font-size: 1.8rem;
+            min-width: 30px;
+        }
+
+        .indicator-text {
+            color: #334155;
+            font-size: 1.1rem;
+            font-weight: 500;
+            line-height: 1.5;
+        }
+
+        .analysis-breakdown {
+            background: white;
+            border: 4px solid #3b82f6;
+            padding: 40px;
+        }
+
+        .analysis-breakdown h3 {
+            color: #1e3a8a;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            font-weight: 900;
+            text-transform: uppercase;
+            border-bottom: 4px solid #60a5fa;
+            padding-bottom: 15px;
+        }
+
+        .feature-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px 0;
+            border-bottom: 2px solid #e0f2fe;
+        }
+
+        .feature-row:last-child {
+            border-bottom: none;
+        }
+
+        .feature-name {
+            color: #475569;
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+
+        .feature-value {
+            color: #1e40af;
+            font-weight: 900;
+            font-size: 1.2rem;
+        }
+
+        .examples {
+            background: white;
+            border: 4px solid #3b82f6;
+            padding: 40px;
+            margin-top: 40px;
+        }
+
+        .examples h3 {
+            color: #1e3a8a;
+            font-size: 1.8rem;
+            margin-bottom: 25px;
+            font-weight: 900;
+            text-transform: uppercase;
+            border-bottom: 4px solid #60a5fa;
+            padding-bottom: 15px;
+        }
+
+        .example-btn {
+            display: block;
+            width: 100%;
+            padding: 20px;
+            margin-bottom: 15px;
+            background: #f0f9ff;
+            border: 3px solid #60a5fa;
+            color: #1e40af;
+            font-size: 1.1rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            text-align: left;
+            text-transform: uppercase;
+        }
+
+        .example-btn:hover {
+            background: #dbeafe;
+            border-color: #1e40af;
+            transform: translateX(10px);
+        }
+
+        .footer {
+            text-align: center;
+            padding: 40px;
+            color: #475569;
+            margin-top: 50px;
+            font-weight: 600;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>
+                <span>🔍</span>
+                MISINFORMATION DETECTOR
+            </h1>
+        </div>
+
+        <div class="form-card">
+            <form id="detectForm">
+                <div class="form-group">
+                    <label for="title">Article Title</label>
+                    <input 
+                        type="text"
+                        id="title"
+                        name="title"
+                        placeholder="Enter the article title"
+                        required
+                    >
+                </div>
+
+                <div class="form-group">
+                    <label for="text">Article Content</label>
+                    <textarea
+                        id="text"
+                        name="text"
+                        placeholder="Paste the full article content here..."
+                        required
+                    ></textarea>
+                </div>
+
+                <button type="submit" class="analyze-btn">
+                    Analyze Article
+                </button>
+            </form>
+        </div>
+
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>Analyzing Article...</p>
+        </div>
+
+        <div class="results" id="results">
+            <div class="result-card">
+                <div class="result-icon" id="resultIcon">✅</div>
+                <div class="result-status" id="status">REAL NEWS</div>
+
+                <div class="confidence-bar-container">
+                    <div class="confidence-label">Confidence Score</div>
+                    <div class="confidence-bar">
+                        <div class="confidence-fill" id="confidenceFill" style="width: 94%">
+                            <span class="confidence-text" id="confidenceText">94.2%</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="stats-grid">
+                <div class="stat-box">
+                    <div class="stat-value" id="wordCount">1,245</div>
+                    <div class="stat-label">Word Count</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="punctScore">4.2%</div>
+                    <div class="stat-label">Punctutation Density</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="capScore">3.8%</div>
+                    <div class="stat-label">Capital Density</div>
+                </div>
+                <div class="stat-box">
+                    <div class="stat-value" id="avgWord">4.8</div>
+                    <div class="stat-label"> Avg Word Length</div>
+                </div>
+            </div>
+            <div class="indicators-section">
+                <h3>📊 Key Indicators</h3>
+                <div class="indicator-grid">
+                    <div class="indicator-item">
+                        <div class="indicator-icon">✓</div>
+                        <div class="indicator-text">Professional writing style detected</div>
+                    </div>
+                    <div class="indicator-item">
+                        <div class="indicator-icon">✓</div>
+                        <div class="indicator-text">Appropriate punctutation usage</div>
+                    </div>
+                    <div class="indicator-item">
+                        <div class="indicator-icon">✓</div>
+                        <div class="indicator-text">Balanced tone and language</div>
+                    </div>
+                    <div class="indicator-item">
+                        <div class="indicator-icon">✓</div>
+                        <div class="indicator-text">Consistent article structure</div>
+                    </div>
+                </div>
+            </div>
+            <div class="analysis-breakdown">
+                <h3>🔬 Feature Analysis</h3>
+                <div class="feature-row">
+                    <span class="feature-name">Text Length</span>
+                    <span class="feature-value" id="textLength">6,842</span>
+                </div>
+                <div class="feature-row">
+                    <span class="feature-name">Title Length</span>
+                    <span class="feature-value" id="titleLength">56</span>
+                </div>
+                <div class="feature-row">
+                    <span class="feature-name">Punctuation Count</span>
+                    <span class="feature-value" id="punctCount">287</span>
+                </div>
+                <div class="feature-row">
+                    <span class="feature-name">Capital Letters</span>
+                    <span class="feature-value" id="capCount">260</span>
+                </div>
+                <div class="feature-row">
+                    <span class="feature-name">Numeric Characters</span>
+                    <span class="feature-value" id="numCount">42</span>
+                </div>  
+            </div>
+        </div>
+        <div class="examples">
+            <h3>💡 Try Example Articles</h3>
+            <button class="example-btn" onclick="loadExample('real')">
+                ✅ Example: Real News Article
+            </button>
+            <button class="example-btn" onclick="loadExample('fake')">
+                ❌ Example: Fake News Article
+            </button>
+        </div>
+    </div>
+
+    <script>
+        const examples= {
+            real: {
+                title: "Senate Passes Infrastructure Bill with Bipartisan Support",
+                text: "The United States Senate passed a comprehensive infrastructure bill on Tuesday with strong bipartisan support, marking a significant legislative achievement. The $1 trillion package includes funding for roads, bridges, public transit, and broadband internet expansion. The bill passed with a vote of 69-30, with 19 Republicans joining all Democrats in support. President Biden praised the effort, calling it a historic investment in America's future. The legislation now moves to the House of Representatives for consideration."
+            },
+            fake: {
+                title: "BREAKING: Scientists Discover Cure for All Diseases!!!",
+                text: "AMAZING NEWS!! Scientists have just announced they found a MIRACLE cure that works for EVERY disease known to mankind!!! Big Pharma is trying to HIDE this from you!!! Share this before they DELETE it!!! This one simple trick that doctors HATE will change your life FOREVER!!! Click here NOW to learn the SECRET they don't want you to know!!!"
+            }
+        };
+
+        function loadExample(type){
+            document.getElementById('title').value=examples[type].title;
+            document.getElementById('text').value=examples[type].text;
+            window.scrollTo({top: 0, behavior:'smooth'});
+        }
+
+        document.getElementById('detectForm').addEventListener('submit', async function(e){
+            e.preventDefault();
+
+            document.getElementById('loading').classList.add('active');
+            document.getElementById('results').classList.remove('show');
+
+            setTimeout(() => {
+                document.getElementById('loading').classList.remove('active');
+                document.getElementById('results').classList.add('show')
+
+                const isReal = Math.random() > 0.5;
+                const confidence = isReal ? 94.2 : 87.5;
+
+                document.getElementById('resultIcon').textContent = isReal ? '✅' : '❌';
+                document.getElementById('status').textContent = isReal ? 'REAL NEWS' : 'FAKE NEWS';
+                document.getElementById('status').className = 'result-status ' + (isReal ? 'real' : 'fake');
+                document.getElementById('confidenceText').textContent = confidence + '%';
+                document.getElementById('confidenceFill').style.width = confidence + '%';
+
+                document.getElementById('results').scrollIntoView({behavior: 'smooth'});
+            }, 2000);
+        });
+    </script>
+</body>
+</html>
