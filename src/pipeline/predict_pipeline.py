@@ -49,7 +49,7 @@ class PredictPipeline:
             df['text_length']=df['text_length'].replace(0, np.nan)
             df['word_count']=df['word_count'].replace(0, np.nan)
 
-            df['punct_density']=df['punct_density']/df['text_length']
+            df['punct_density']=df['punct_count']/df['text_length']
             df['capital_density']=df['capital_count']/df['text_length']
             df['avg_word_length']=df['text_length']/df['word_count']
 
