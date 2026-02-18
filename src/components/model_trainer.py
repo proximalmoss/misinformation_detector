@@ -33,13 +33,14 @@ class ModelTrainer:
                 "AdaBoost Classifier":AdaBoostClassifier()
             }
             params={
-                "Logistic Regression":{'C':[0.1,1.0,10.0]},
-                "Decision Tree":{'max_depth':[10,20,None], 'min_samples_split':[2,5,10]},
-                "Random Forest":{'n_estimators':[50,100,200], 'max_depth':[15,20,None]},
-                "XGBClassifier":{'learning_rate':[0.05,0.1,0.2], 'n_estimators':[50,100,200], 'max_depth':[5,7,10]},
-                "CatBoost Classifier":{'depth':[8], 'learning_rate':[0.1], 'iterations':[100]},
-                "AdaBoost Classifier":{'learning_rate':[0.1,0.5,1.0], 'n_estimators':[50,100,200]}
+                "Logistic Regression": {'C': [1.0, 10.0]},
+                "Decision Tree": {'max_depth': [10, 20]},
+                "Random Forest": {'n_estimators': [100], 'max_depth': [20]},
+                "XGBClassifier": {'learning_rate': [0.1], 'n_estimators': [100], 'max_depth': [7]},
+                "CatBoost Classifier": {'depth': [8], 'learning_rate': [0.1], 'iterations': [100]},
+                "AdaBoost Classifier": {'learning_rate': [0.1], 'n_estimators': [100]}
             }
+            
             model_report: dict=evaluate_models(
                 x_train=x_train, y_train=y_train, x_test=x_test, y_test=y_test, models=models, params=params
             )

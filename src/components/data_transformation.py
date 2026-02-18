@@ -1,5 +1,6 @@
 import os
 import sys
+import re
 from dataclasses import dataclass
 
 import numpy as np
@@ -20,13 +21,34 @@ from src.utils import save_object
 @dataclass
 class DataTransformationConfig:
         preprocessor_obj_file_path= os.path.join("artifact", "preprocessor.pkl")
+
 class DataTransformation:
     def __init__(self):
         self.data_transformation_config=DataTransformationConfig()
+
+    def clean_text(self, text):
+        text = str(text)
+        # Remove Reuters/AP style datelines: "WASHINGTON (Reuters) -"
+        text = re.sub(r'^[A-Z\s,]+\([^)]+\)\s*[-–]\s*', '', text)
+        # Remove source mentions
+        text = re.sub(r'\(Reuters\)|\(AP\)|\(AFP\)|\(BBC\)', '', text, flags=re.IGNORECASE)
+        # Remove URLs
+        text = re.sub(r'http\S+|www\.\S+', '', text)
+        # Remove email addresses
+        text = re.sub(r'\S+@\S+', '', text)
+        # Remove special characters
+        text = re.sub(r'[^a-zA-Z\s]', ' ', text)
+        # Remove extra whitespace
+        text = re.sub(r'\s+', ' ', text).strip()
+        # Lowercase
+        text = text.lower()
+        return text
+
     def get_data_transformer_object(self):
         try:
             text_feature='text'
-            numerical_columns=['text_length','title_length', 'word_count', 'punct_density', 'capital_density', 'avg_word_length']
+            numerical_columns=['text_length','title_length', 'word_count', 'avg_word_length']
+            # NOTE: removed punct_density and capital_density since clean_text strips punctuation/caps
 
             tfidf_pipeline=TfidfVectorizer(max_features=3000, ngram_range=(1,2))
             num_pipeline=Pipeline(
@@ -36,7 +58,7 @@ class DataTransformation:
                 ]
             )
 
-            logging.info("TF-IF vectorication and numerical scaling pipelines created")
+            logging.info("TF-IDF vectorization and numerical scaling pipelines created")
 
             return tfidf_pipeline, num_pipeline, numerical_columns
         except Exception as e:
@@ -47,22 +69,18 @@ class DataTransformation:
             df['text_length']=df['text'].apply(lambda x: len(str(x)))
             df['title_length']=df['title'].apply(lambda x: len(str(x)))
             df['word_count']=df['text'].apply(lambda x: len(str(x).split()))
-            df['punct_count']=df['text'].apply(lambda x: sum([1 for c in str(x) if c in string.punctuation]))
-            df['capital_count']=df['text'].apply(lambda x: sum([1 for c in str(x) if c.isupper()]))
-            df['numeric_count']=df['text'].apply(lambda x: sum([1 for c in str(x) if c.isdigit()]))
 
             df['text_length'] = df['text_length'].replace(0, np.nan)
             df['word_count'] = df['word_count'].replace(0, np.nan)
 
-            df['punct_density']=df['punct_count']/df['text_length']
-            df['capital_density']=df['capital_count']/df['text_length']
-
             df['avg_word_length']=df['text_length']/df['word_count']
-
             df['avg_word_length']=df['avg_word_length'].replace([np.inf, -np.inf], np.nan)
             df['avg_word_length']=df['avg_word_length'].fillna(df['avg_word_length'].median())
 
-            logging.info("Feature engineering completed")
+            df['text'] = df['text'].apply(self.clean_text)
+            df['title'] = df['title'].apply(self.clean_text)
+
+            logging.info("Feature engineering and text cleaning completed")
 
             return df
         except Exception as e:

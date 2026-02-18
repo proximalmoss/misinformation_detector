@@ -565,7 +565,7 @@
     </div>
 
     <script>
-        const examples= {
+        const examples = {
             real: {
                 title: "Senate Passes Infrastructure Bill with Bipartisan Support",
                 text: "The United States Senate passed a comprehensive infrastructure bill on Tuesday with strong bipartisan support, marking a significant legislative achievement. The $1 trillion package includes funding for roads, bridges, public transit, and broadband internet expansion. The bill passed with a vote of 69-30, with 19 Republicans joining all Democrats in support. President Biden praised the effort, calling it a historic investment in America's future. The legislation now moves to the House of Representatives for consideration."
@@ -576,33 +576,64 @@
             }
         };
 
-        function loadExample(type){
-            document.getElementById('title').value=examples[type].title;
-            document.getElementById('text').value=examples[type].text;
-            window.scrollTo({top: 0, behavior:'smooth'});
+        function loadExample(type) {
+            document.getElementById('title').value = examples[type].title;
+            document.getElementById('text').value = examples[type].text;
+            window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        document.getElementById('detectForm').addEventListener('submit', async function(e){
+        document.getElementById('detectForm').addEventListener('submit', async function(e) {
             e.preventDefault();
 
             document.getElementById('loading').classList.add('active');
             document.getElementById('results').classList.remove('show');
-
-            setTimeout(() => {
+            
+            const formData = new FormData(this);
+            
+            try {
+                const response = await fetch('/predict', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                const data = await response.json();
+                
+                if (data.error) {
+                    alert('Error: ' + data.error);
+                    document.getElementById('loading').classList.remove('active');
+                    return;
+                }
+                
                 document.getElementById('loading').classList.remove('active');
-                document.getElementById('results').classList.add('show')
-
-                const isReal = Math.random() > 0.5;
-                const confidence = isReal ? 94.2 : 87.5;
-
+                document.getElementById('results').classList.add('show');
+                
+                const isReal = data.prediction === 'Real';
                 document.getElementById('resultIcon').textContent = isReal ? '✅' : '❌';
                 document.getElementById('status').textContent = isReal ? 'REAL NEWS' : 'FAKE NEWS';
                 document.getElementById('status').className = 'result-status ' + (isReal ? 'real' : 'fake');
-                document.getElementById('confidenceText').textContent = confidence + '%';
-                document.getElementById('confidenceFill').style.width = confidence + '%';
-
-                document.getElementById('results').scrollIntoView({behavior: 'smooth'});
-            }, 2000);
+                document.getElementById('confidenceText').textContent = data.confidence + '%';
+                document.getElementById('confidenceFill').style.width = data.confidence + '%';
+                
+                if (data.features) {
+                    document.getElementById('wordCount').textContent = data.features.word_count.toLocaleString();
+                    document.getElementById('punctScore').textContent = (data.features.punct_density * 100).toFixed(1) + '%';
+                    document.getElementById('capScore').textContent = (data.features.capital_density * 100).toFixed(1) + '%';
+                    document.getElementById('avgWord').textContent = data.features.avg_word_length.toFixed(1);
+                    
+                    document.getElementById('textLength').textContent = data.features.text_length.toLocaleString();
+                    document.getElementById('titleLength').textContent = data.features.title_length;
+                    document.getElementById('punctCount').textContent = data.features.punct_count;
+                    document.getElementById('capCount').textContent = data.features.capital_count;
+                    document.getElementById('numCount').textContent = data.features.numeric_count;
+                }
+                
+                document.getElementById('results').scrollIntoView({ behavior: 'smooth' });
+                
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+                document.getElementById('loading').classList.remove('active');
+            }
         });
     </script>
 </body>

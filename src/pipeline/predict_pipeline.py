@@ -1,4 +1,5 @@
 import sys
+import re
 import pandas as pd
 import numpy as np
 import string
@@ -9,6 +10,18 @@ from src.utils import load_object
 class PredictPipeline:
     def __init__(self):
         pass
+
+    def clean_text(self, text):
+        text = str(text)
+        text = re.sub(r'^[A-Z\s,]+\([^)]+\)\s*[-–]\s*', '', text)
+        text = re.sub(r'\(Reuters\)|\(AP\)|\(AFP\)|\(BBC\)', '', text, flags=re.IGNORECASE)
+        text = re.sub(r'http\S+|www\.\S+', '', text)
+        text = re.sub(r'\S+@\S+', '', text)
+        text = re.sub(r'[^a-zA-Z\s]', ' ', text)
+        text = re.sub(r'\s+', ' ', text).strip()
+        text = text.lower()
+        return text
+
     def predict(self, features):
         try:
             model_path='artifact/model.pkl'
@@ -39,22 +52,20 @@ class PredictPipeline:
         
     def engineer_features(self, df):
         try:
+
             df['text_length']=df['text'].apply(lambda x: len(str(x)))
             df['title_length']=df['title'].apply(lambda x: len(str(x)))
             df['word_count']=df['text'].apply(lambda x: len(str(x).split()))
-            df['punct_count']=df['text'].apply(lambda x: sum([1 for c in str(x) if c in string.punctuation]))
-            df['capital_count']=df['text'].apply(lambda x: sum([1 for c in str(x) if c.isupper()]))
-            df['numeric_count']=df['text'].apply(lambda x: sum([1 for c in str(x) if c.isdigit()]))
 
             df['text_length']=df['text_length'].replace(0, np.nan)
             df['word_count']=df['word_count'].replace(0, np.nan)
 
-            df['punct_density']=df['punct_count']/df['text_length']
-            df['capital_density']=df['capital_count']/df['text_length']
             df['avg_word_length']=df['text_length']/df['word_count']
-
             df['avg_word_length']=df['avg_word_length'].replace([np.inf, -np.inf], np.nan)
             df['avg_word_length']=df['avg_word_length'].fillna(df['avg_word_length'].median())
+
+            df['text'] = df['text'].apply(self.clean_text)
+            df['title'] = df['title'].apply(self.clean_text)
 
             return df
         except Exception as e:
